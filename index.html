@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive 8-Week Data Scientist Plan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals (Stone, Teal) -->
+    <!-- Application Structure Plan: A single-page, timeline-based SPA that guides the user linearly through an 8-week plan. A sticky navigation allows for quick jumps between weeks. The core interaction is a dynamic checklist system that updates a main progress bar and a task category chart, providing motivation and a clear overview of progress. This linear, interactive timeline structure was chosen because it directly mirrors the sequential nature of the source plan, making it highly intuitive for the user to follow their journey from start to finish. -->
+    <!-- Visualization & Content Choices: Plan Content -> Goal: Track Progress -> Presentation: Interactive checklists, overall progress bar (HTML/CSS), and a donut chart (Chart.js) breaking down tasks by category (Portfolio, Branding, Networking, Application, Interviewing). -> Interaction: Checking/unchecking tasks updates all progress visualizations in real-time. -> Justification: This multi-faceted feedback system (micro-level tasks, macro-level progress bar, categorical chart) provides comprehensive and motivating feedback to the user, enhancing engagement with the plan. -> Library: Chart.js for the donut chart. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f5f5f4; /* stone-100 */
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 350px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        .week-card {
+            scroll-margin-top: 100px;
+        }
+    </style>
+</head>
+<body class="text-stone-800">
+
+    <header class="sticky top-0 z-20 bg-white/80 backdrop-blur-lg shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
+                <h1 class="text-2xl font-bold text-stone-900">Your 8-Week Data Scientist Game Plan</h1>
+                <div class="w-full sm:w-1/2 lg:w-1/3">
+                    <div class="flex justify-between mb-1">
+                        <span class="text-base font-medium text-teal-700">Overall Progress</span>
+                        <span class="text-sm font-medium text-teal-700" id="progress-text">0%</span>
+                    </div>
+                    <div class="w-full bg-stone-200 rounded-full h-2.5">
+                        <div id="progress-bar" class="bg-teal-600 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <nav class="sticky top-[88px] z-10 bg-stone-50 border-b border-stone-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-center flex-wrap">
+                <a href="#week-1" class="nav-link text-sm sm:text-base font-medium text-stone-600 hover:text-teal-600 hover:bg-stone-100 px-3 py-3 transition-colors duration-200">Wk 1</a>
+                <a href="#week-2" class="nav-link text-sm sm:text-base font-medium text-stone-600 hover:text-teal-600 hover:bg-stone-100 px-3 py-3 transition-colors duration-200">Wk 2</a>
+                <a href="#week-3" class="nav-link text-sm sm:text-base font-medium text-stone-600 hover:text-teal-600 hover:bg-stone-100 px-3 py-3 transition-colors duration-200">Wk 3</a>
+                <a href="#week-4" class="nav-link text-sm sm:text-base font-medium text-stone-600 hover:text-teal-600 hover:bg-stone-100 px-3 py-3 transition-colors duration-200">Wk 4</a>
+                <a href="#week-5" class="nav-link text-sm sm:text-base font-medium text-stone-600 hover:text-teal-600 hover:bg-stone-100 px-3 py-3 transition-colors duration-200">Wk 5</a>
+                <a href="#week-6" class="nav-link text-sm sm:text-base font-medium text-stone-600 hover:text-teal-600 hover:bg-stone-100 px-3 py-3 transition-colors duration-200">Wk 6</a>
+                <a href="#week-7" class="nav-link text-sm sm:text-base font-medium text-stone-600 hover:text-teal-600 hover:bg-stone-100 px-3 py-3 transition-colors duration-200">Wk 7</a>
+                <a href="#week-8" class="nav-link text-sm sm:text-base font-medium text-stone-600 hover:text-teal-600 hover:bg-stone-100 px-3 py-3 transition-colors duration-200">Wk 8</a>
+            </div>
+        </div>
+    </nav>
+    
+    <main class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-8" id="plan-container">
+                <!-- Weeks will be dynamically inserted here -->
+            </div>
+            <aside class="lg:col-span-1 lg:sticky top-40 h-fit">
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h2 class="text-xl font-semibold mb-4 text-center text-stone-900">Task Completion Breakdown</h2>
+                    <p class="text-sm text-stone-600 text-center mb-4">This chart shows how your completed tasks are distributed across key areas of your job search. Use it to ensure you're maintaining a balanced effort.</p>
+                    <div class="chart-container">
+                        <canvas id="taskChart"></canvas>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <script>
+        const planData = [
+            {
+                week: 1,
+                dates: "Sep 29 - Oct 5",
+                theme: "Strategy & Foundation",
+                description: "This week is about setting the stage. A strong foundation with a polished brand and clear project goals will make the following weeks much more effective. Think of this as choosing your strategy before the match begins.",
+                tasks: [
+                    { id: 'w1t1', text: 'Implement resume edits and quantify achievements.', category: 'Branding' },
+                    { id: 'w1t2', text: 'Update LinkedIn headline and summary for a Data Scientist role.', category: 'Branding' },
+                    { id: 'w1t3', text: 'Get a professional-looking photo for LinkedIn.', category: 'Branding' },
+                    { id: 'w1t4', text: 'Finalize scope and find datasets for Health Tech project.', category: 'Portfolio' },
+                    { id: 'w1t5', text: 'Outline and find data for Ed-Tech NLP project.', category: 'Portfolio' },
+                    { id: 'w1t6', text: 'Create a dedicated GitHub account for your portfolio.', category: 'Branding' },
+                    { id: 'w1t7', text: 'Create repositories for each project with a README.', category: 'Portfolio' },
+                ]
+            },
+            {
+                week: 2,
+                dates: "Oct 6 - Oct 12",
+                theme: "Project 1 - The Health Tech Deep Dive",
+                description: "Focus entirely on your first project. This is where you dig into the data, understand its nuances, and lay the groundwork for a powerful predictive model. A thorough EDA is the key to a successful project.",
+                tasks: [
+                    { id: 'w2t1', text: 'Select, download, and load the health dataset.', category: 'Portfolio' },
+                    { id: 'w2t2', text: 'Perform comprehensive data cleaning and document steps.', category: 'Portfolio' },
+                    { id: 'w2t3', text: 'Conduct Exploratory Data Analysis (EDA) with visualizations.', category: 'Portfolio' },
+                    { id: 'w2t4', text: 'Formulate and document a clear hypothesis for the project.', category: 'Portfolio' },
+                ]
+            },
+            {
+                week: 3,
+                dates: "Oct 13 - Oct 19",
+                theme: "Project 1 - Modeling & Deployment",
+                description: "Transition from analysis to creation. This week, you'll build the core machine learning model and, crucially, showcase it in an interactive way. Deploying a simple app demonstrates end-to-end skills that few other candidates show.",
+                tasks: [
+                    { id: 'w3t1', text: 'Preprocess data for modeling (scaling, encoding).', category: 'Portfolio' },
+                    { id: 'w3t2', text: 'Build and train several classification models.', category: 'Portfolio' },
+                    { id: 'w3t3', text: 'Evaluate models using appropriate metrics and select the best one.', category: 'Portfolio' },
+                    { id: 'w3t4', text: 'Build a simple web interface (Streamlit/Flask) for your model.', category: 'Portfolio' },
+                    { id: 'w3t5', text: 'Push all code, notebooks, and a detailed README to GitHub.', category: 'Portfolio' },
+                ]
+            },
+            {
+                week: 4,
+                dates: "Oct 20 - Oct 26",
+                theme: "Project 2 & Portfolio Launch",
+                description: "While kicking off your second project, it's time to build your online professional home. A clean, well-documented portfolio website is non-negotiable for a modern data scientist.",
+                tasks: [
+                    { id: 'w4t1', text: 'Begin NLP project: data cleaning and EDA.', category: 'Portfolio' },
+                    { id: 'w4t2', text: 'Perform sentiment analysis and topic modeling.', category: 'Portfolio' },
+                    { id: 'w4t3', text: 'Create a simple portfolio website using GitHub Pages.', category: 'Branding' },
+                    { id: 'w4t4', text: 'Write a detailed project page for the completed Health Tech project.', category: 'Branding' },
+                ]
+            },
+            {
+                week: 5,
+                dates: "Oct 27 - Nov 2",
+                theme: "Full-Scale Assault",
+                description: "With your portfolio in place, it's time to go on the offensive. The job application process is a numbers game, but quality and organization are your force multipliers. Start strong and stay consistent.",
+                tasks: [
+                    { id: 'w5t1', text: 'Complete the modeling for the NLP project.', category: 'Portfolio' },
+                    { id: 'w5t2', text: 'Add the NLP project to your portfolio website.', category: 'Portfolio' },
+                    { id: 'w5t3', text: 'Finalize your master resume and cover letter template.', category: 'Application' },
+                    { id: 'w5t4', text: 'Apply to 10-15 quality Data Scientist roles.', category: 'Application' },
+                    { id: 'w5t5', text: 'Create a spreadsheet to track all job applications.', category: 'Application' },
+                ]
+            },
+            {
+                week: 6,
+                dates: "Nov 3 - Nov 9",
+                theme: "Networking & Sharpening Your Skills",
+                description: "Applications alone aren't enough. This week is about making human connections and keeping your technical skills razor-sharp. Every connection is a potential opportunity, and every practice problem builds confidence.",
+                tasks: [
+                    { id: 'w6t1', text: 'Send 10 personalized LinkedIn connection requests to people in the field.', category: 'Networking' },
+                    { id: 'w6t2', text: 'Engage with data science content on LinkedIn (comment/share).', category: 'Networking' },
+                    { id: 'w6t3', text: 'Practice SQL/Python problems (Mon/Wed/Fri).', category: 'Interviewing' },
+                    { id: 'w6t4', text: 'Review machine learning concepts (Tue/Thu).', category: 'Interviewing' },
+                ]
+            },
+            {
+                week: 7,
+                dates: "Nov 10 - Nov 16",
+                theme: "The Interview Gauntlet",
+                description: "Preparation is everything. This week, you'll structure your stories, practice your delivery, and get ready to confidently explain your skills and experience. Don't just know your projects; know how to talk about them.",
+                tasks: [
+                    { id: 'w7t1', text: 'Prepare your 90-second "Tell me about yourself" pitch.', category: 'Interviewing' },
+                    { id: 'w7t2', text: 'Prepare a 5-minute presentation for each portfolio project.', category: 'Interviewing' },
+                    { id: 'w7t3', text: 'Practice the STAR method with 5 examples from your experience.', category: 'Interviewing' },
+                    { id: 'w7t4', text: 'Conduct at least one mock interview with a peer or friend.', category: 'Interviewing' },
+                ]
+            },
+            {
+                week: 8,
+                dates: "Nov 17 - Nov 23",
+                theme: "Closing the Deal",
+                description: "This is the final push. Focus on execution during interviews, learning from each experience, and maintaining your mental energy. Stay prepared, stay positive, and remember the hard work you've put in.",
+                tasks: [
+                    { id: 'w8t1', text: 'Continue applying to new roles as they appear.', category: 'Application' },
+                    { id: 'w8t2', text: 'Thoroughly research companies and interviewers before each call.', category: 'Interviewing' },
+                    { id: 'w8t3', text: 'Prepare 3-4 thoughtful questions to ask your interviewers.', category: 'Interviewing' },
+                    { id: 'w8t4', text: 'After each interview, write down reflection notes.', category: 'Interviewing' },
+                    { id: 'w8t5', text: 'Take scheduled breaks to stay fresh (NBA, Dota 2, etc.).', category: 'Networking' },
+                ]
+            },
+        ];
+
+        let taskState = [];
+        let taskChart;
+
+        function initializeState() {
+            const savedState = localStorage.getItem('dataSciencePlanState');
+            if (savedState) {
+                taskState = JSON.parse(savedState);
+            } else {
+                taskState = planData.flatMap(week =>
+                    week.tasks.map(task => ({ ...task, week: week.week, completed: false }))
+                );
+            }
+        }
+        
+        function saveState() {
+            localStorage.setItem('dataSciencePlanState', JSON.stringify(taskState));
+        }
+
+        function renderPlan() {
+            const container = document.getElementById('plan-container');
+            container.innerHTML = '';
+            planData.forEach(weekData => {
+                const weekEl = document.createElement('section');
+                weekEl.id = `week-${weekData.week}`;
+                weekEl.className = 'week-card bg-white p-6 rounded-xl shadow-md';
+                
+                let tasksHtml = weekData.tasks.map(task => {
+                    const currentTask = taskState.find(t => t.id === task.id);
+                    const isChecked = currentTask ? currentTask.completed : false;
+                    return `
+                        <li class="flex items-start space-x-3">
+                            <input id="${task.id}" data-task-id="${task.id}" type="checkbox" ${isChecked ? 'checked' : ''} 
+                                   class="h-5 w-5 rounded border-stone-300 text-teal-600 focus:ring-teal-500 mt-0.5 cursor-pointer accent-teal-600">
+                            <label for="${task.id}" class="text-stone-700 cursor-pointer">${task.text}</label>
+                        </li>
+                    `;
+                }).join('');
+
+                weekEl.innerHTML = `
+                    <div class="border-b border-stone-200 pb-4 mb-4">
+                        <h2 class="text-2xl font-bold text-stone-900">Week ${weekData.week}: ${weekData.theme}</h2>
+                        <p class="text-sm font-medium text-stone-500">${weekData.dates}</p>
+                    </div>
+                    <p class="text-stone-600 mb-6">${weekData.description}</p>
+                    <ul class="space-y-4">
+                        ${tasksHtml}
+                    </ul>
+                `;
+                container.appendChild(weekEl);
+            });
+        }
+        
+        function updateProgress() {
+            const totalTasks = taskState.length;
+            const completedTasks = taskState.filter(task => task.completed).length;
+            const percentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+            
+            document.getElementById('progress-bar').style.width = `${percentage}%`;
+            document.getElementById('progress-text').textContent = `${percentage}%`;
+
+            updateChart();
+        }
+
+        function handleTaskToggle(event) {
+            const taskId = event.target.dataset.taskId;
+            if (!taskId) return;
+            
+            const task = taskState.find(t => t.id === taskId);
+            if (task) {
+                task.completed = event.target.checked;
+                saveState();
+                updateProgress();
+            }
+        }
+        
+        function createOrUpdateChart() {
+            const ctx = document.getElementById('taskChart').getContext('2d');
+            const completedTasks = taskState.filter(task => task.completed);
+            
+            const categories = [...new Set(planData.flatMap(w => w.tasks.map(t => t.category)))];
+            const categoryCounts = categories.map(cat => {
+                return completedTasks.filter(task => task.category === cat).length;
+            });
+
+            const chartData = {
+                labels: categories,
+                datasets: [{
+                    data: categoryCounts,
+                    backgroundColor: [
+                        '#0d9488', // teal-600
+                        '#14b8a6', // teal-500
+                        '#5eead4', // teal-300
+                        '#f59e0b', // amber-500
+                        '#fbbf24', // amber-400
+                    ],
+                    borderColor: '#f5f5f4', // stone-100
+                    borderWidth: 2,
+                    hoverOffset: 8
+                }]
+            };
+
+            if (taskChart) {
+                taskChart.data = chartData;
+                taskChart.update();
+            } else {
+                taskChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: chartData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    font: {
+                                        family: "'Inter', sans-serif"
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed !== null) {
+                                            label += context.parsed;
+                                        }
+                                        return label + ' tasks';
+                                    }
+                                }
+                            }
+                        },
+                        animation: {
+                            animateScale: true,
+                            animateRotate: true
+                        }
+                    }
+                });
+            }
+        }
+        
+        function updateChart() {
+            const completedTasks = taskState.filter(task => task.completed);
+            const categories = [...new Set(planData.flatMap(w => w.tasks.map(t => t.category)))];
+            const categoryCounts = categories.map(cat => {
+                return completedTasks.filter(task => task.category === cat).length;
+            });
+            
+            if (taskChart) {
+                taskChart.data.datasets[0].data = categoryCounts;
+                taskChart.update();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeState();
+            renderPlan();
+            createOrUpdateChart();
+            updateProgress();
+
+            const container = document.getElementById('plan-container');
+            container.addEventListener('change', handleTaskToggle);
+            
+            document.querySelectorAll('.nav-link').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+        });
+
+    </script>
+</body>
+</html>
